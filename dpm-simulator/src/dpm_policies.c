@@ -178,16 +178,17 @@ int dpm_decide_state(psm_state_t *next_state, psm_state_t prev_state, psm_time_t
             //Day 3: EDIT
 
             if( (T_Pre >= T_B_E_I) && (T_Pre >= Thr_Idle))  
-               {
-
+                {
+               if(*prev_state == PSM_STATE_RUN )
                *next_state = PSM_STATE_IDLE;
+                }
 
-               if((T_Pre >= T_B_E_S) && (T_Pre >= Thr_Sleep) && (Thr_Sleep > Thr_Idle ) )
+             if((T_Pre >= T_B_E_S) && (T_Pre >= Thr_Sleep) && (Thr_Sleep > Thr_Idle ) )
 	         {
+               if(*prev_state == PSM_STATE_RUN )
                *next_state = PSM_STATE_SLEEP;
                  }
-
-               }
+		     
             else 
              {
              *next_state = PSM_STATE_RUN;
