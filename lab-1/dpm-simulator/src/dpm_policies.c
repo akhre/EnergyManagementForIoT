@@ -3,6 +3,12 @@
 
 //#define T_Pre_N_Reg
 #define T_Pre_Poly
+#define T_B_E_I  T_on_off_I * T_off_on_I
+#define T_B_E_S   T_on_off_S * T_off_on_S
+//#define T_Pre_N_Reg
+//#define one_state_only
+//#define three_state
+#define History
 
 int dpm_simulate(psm_t psm, dpm_policy_t sel_policy, dpm_timeout_params
 		tparams, dpm_history_params hparams, char* fwl)
@@ -144,49 +150,106 @@ int dpm_decide_state(psm_state_t *next_state, psm_state_t prev_state, psm_time_t
     psm_time_t  Thr_Sleep = hparams.threshold[0];
     psm_time_t  Thr_Idle  = hparams.threshold[1];
 
-    const psm_time_t T_B_E_I  = T_on_off_I * T_off_on_I;
-    const psm_time_t T_B_E_S  = T_on_off_S * T_off_on_S;
 
-    #ifdef T_Pre_N_Reg 
-    for( int i =0; i < DPM_HIST_WIND_SIZE; i++)
-    {
-     T_Pre += hparams.alpha[i+1]*history[DPM_HIST_WIND_SIZE-i];
-    }
-     T_Pre += hparams.alpha[0];
-    #endif 
-
-    #ifdef T_Pre_Poly
-    for( int i =0; i < DPM_HIST_WIND_SIZE; i++)
-    {
-     T_Pre += hparams.alpha[i] * pow(history[i],i);
-    }
-    #endif
-
-    
     switch (policy) {
 
         case DPM_TIMEOUT:
-            /* Day 2: EDIT */
-            if(t_curr > t_inactive_start + tparams.timeout) {
+    
+                #ifdef one_state_only 
+               //one transition only (RUN>>SLEEP or SLEEP>>RUN) or (RUN>>IDLE or IDLE>>RUN)
+               if((t_curr > t_inactive_start + tparams.timeout[1]) &&  (tparams.timeout[1] >  tparams.timeout[0]))
+                 *next_state = PSM_STATE_SLEEP;
+
+               else if((t_curr > t_inactive_start + tparams.timeout[0]) &&  (tparams.timeout[1] <  tparams.timeout[0]))
                 *next_state = PSM_STATE_IDLE;
-            } else {
+
+               else {
+                *next_state = PSM_STATE_RUN;}
+               break;
+               #endif
+
+               
+               #ifdef three_state
+             // three state transition between idle>>run>>sleep and sleep>>run>>idle  without any violation between sleep and idle   
+               if(tparams.timeout[1] >= tparams.timeout[0] && (t_curr > t_inactive_start + tparams.timeout[1])) 
+                 {
+                        if((prev_state == PSM_STATE_SLEEP) || (prev_state == PSM_STATE_RUN) )
+                     {
+
+                        *next_state = PSM_STATE_SLEEP;
+                     }
+                        else {
+                        *next_state = PSM_STATE_RUN;}
+                 }
+
+               else if((t_curr > t_inactive_start + tparams.timeout[0]))
+                 {
+                 
+                   if((prev_state == PSM_STATE_IDLE) || (prev_state == PSM_STATE_RUN) )
+                     {
+
+                         *next_state = PSM_STATE_IDLE;
+                     }
+                   else {
+                         *next_state = PSM_STATE_RUN;}
+                  }
+                 
+            else {
                 *next_state = PSM_STATE_RUN;
             }
             break;
+            #endif 
 
+
+        //Day 3: EDIT
+        #ifdef History 
         case DPM_HISTORY:
-            //Day 3: EDIT
-            if( (T_Pre >= T_B_E_I) && (T_Pre >= Thr_Idle))  
+             if(t_curr > t_inactive_start)
                 {
-                 *next_state = PSM_STATE_IDLE;    
-               if((T_Pre >= T_B_E_S) && (T_Pre >= Thr_Sleep) && (Thr_Sleep > Thr_Idle ) )
-                 *next_state = PSM_STATE_SLEEP;
-                }            
-            else 
-             {
-             *next_state = PSM_STATE_RUN;
-             }
+		#ifdef T_Pre_Poly
+		    for( int i =0; i < DPM_HIST_WIND_SIZE; i++)
+		    {
+		     T_Pre += hparams.alpha[i] * pow(history[i],i);
+		    }
+		    #endif
+
+		#ifdef T_Pre_N_Reg 
+		    for( int i =1; i < DPM_HIST_WIND_SIZE; i++)
+		    {
+		     T_Pre += hparams.alpha[i]*(history[DPM_HIST_WIND_SIZE-(i)]);
+		    }
+		     T_Pre += hparams.alpha[0];
+		   #endif 
+             if((T_Pre >= T_B_E_S) && (T_Pre >= Thr_Sleep) && (Thr_Sleep > Thr_Idle )) 
+                 {
+                        if((prev_state == PSM_STATE_SLEEP) || (prev_state == PSM_STATE_RUN) )
+                     {
+
+                        *next_state = PSM_STATE_SLEEP;
+                     }
+                        else {
+                        *next_state = PSM_STATE_RUN;}
+                 }
+
+               else if((T_Pre >= T_B_E_I) && (T_Pre >= Thr_Idle))
+                 {
+                 
+                   if((prev_state == PSM_STATE_IDLE) || (prev_state == PSM_STATE_RUN) )
+                     {
+
+                         *next_state = PSM_STATE_IDLE;
+                     }
+                   else {
+                         *next_state = PSM_STATE_RUN;}
+                  }
+                 }
+
+            else {
+                *next_state = PSM_STATE_RUN;
+            }          
             break;
+            #endif
+
         default:
             printf("[error] unsupported policy\n");
             return 0;

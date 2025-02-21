@@ -51,8 +51,9 @@ typedef int dpm_policy_t;
  */
 typedef struct {
     /* Day2: you can add/change stuff here */
-    psm_time_t timeout;
-} dpm_timeout_params;
+    psm_time_t timeout[2];
+    psm_time_t IDLE;
+} dpm_timeout_params;1
 
 /**
  * @brief Container for history policy parameters

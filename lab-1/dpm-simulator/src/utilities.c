@@ -16,7 +16,11 @@ int parse_args(int argc, char *argv[], char *fwl, psm_t *psm, dpm_policy_t
         if(strcmp(argv[cur], "-t") == 0) {
             *selected_policy = DPM_TIMEOUT;
             if(argc > cur + 1) {
-                tparams->timeout = atof(argv[++cur]);
+                tparams->timeout[0] = atof(argv[++cur]);
+                tparams->timeout[1] = atof(argv[++cur]);
+                printf("the time out values as input are <<<<<<<<<<<>>>>>>>>>>>>>>\n"); 
+                printf("the value of time out idle is %f \n",tparams->timeout[0]);            
+                printf("the value of time out sleep is %f \n",tparams->timeout[1]); 
             }
             else return	0;
         }
