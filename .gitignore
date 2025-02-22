@@ -1,1 +1,7 @@
-LAB02/env
+LAB02_OLD_NOT_USE/
+LAB02/plot_power.py
+LAB02/*.bak
+LAB02/processed_*/
+LAB02/dvs_processed_*/
+LAB02/*copy.csv
+LAB02/lab2_original.ipynb
