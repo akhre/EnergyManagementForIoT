@@ -1,0 +1,2 @@
+LAB03/sim_trace_parallel.txt filter=lfs diff=lfs merge=lfs -text
+LAB03/sim_trace_sequential.txt filter=lfs diff=lfs merge=lfs -text
